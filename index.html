@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>無人機足球 3v3 互動教學與戰術模擬平台</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            950: '#060A12',
+                            900: '#0B1120',
+                            800: '#151F32',
+                            700: '#1E293B',
+                            600: '#334155'
+                        },
+                        cyan: {
+                            DEFAULT: '#06B6D4',
+                            glow: '#22D3EE'
+                        },
+                        rose: {
+                            DEFAULT: '#F43F5E',
+                            glow: '#FB7185'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                        tech: ['Chakra Petch', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar & canvas styles */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0B1120; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #06B6D4; }
+        
+        canvas { touch-action: none; }
+        .tech-border { border: 1px solid rgba(6, 182, 212, 0.25); }
+        .tech-border-rose { border: 1px solid rgba(244, 63, 94, 0.3); }
+        .tech-glow { box-shadow: 0 0 15px rgba(6, 182, 212, 0.15); }
+        .tech-glow-rose { box-shadow: 0 0 15px rgba(244, 63, 94, 0.2); }
+        .pulse-subtle { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+    </style>
+</head>
+<body class="bg-navy-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-cyan selection:text-navy-950">
+
+    <!-- Header / Navbar -->
+    <header class="bg-navy-900 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan to-blue-600 flex items-center justify-center shadow-lg shadow-cyan/20">
+                    <i class="fa-solid fa-drone text-navy-950 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold font-tech tracking-wider text-white flex items-center gap-2">
+                        DRONE SOCCER <span class="bg-cyan/20 text-cyan text-xs font-semibold px-2 py-0.5 rounded border border-cyan/40">3v3 PRO</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">無人機足球 3v3 互動教學與戰術模擬平台</p>
+                </div>
+            </div>
+
+            <!-- Main Nav Tabs -->
+            <nav class="hidden md:flex space-x-1 bg-navy-950 p-1 rounded-xl border border-slate-800">
+                <button onclick="switchTab('sim')" id="nav-sim" class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 bg-cyan text-navy-950 font-bold shadow-md">
+                    <i class="fa-solid fa-gamepad"></i> 互動戰術板
+                </button>
+                <button onclick="switchTab('rules')" id="nav-rules" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-slate-300 hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-book-bookmark"></i> 賽制與規則
+                </button>
+                <button onclick="switchTab('aero')" id="nav-aero" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-slate-300 hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wind"></i> 氣流理論
+                </button>
+                <button onclick="switchTab('quiz')" id="nav-quiz" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-slate-300 hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-[#F43F5E] fa-graduation-cap"></i> 實戰與測驗
+                </button>
+            </nav>
+
+            <!-- Mobile Menu Button -->
+            <div class="md:hidden">
+                <button onclick="toggleMobileMenu()" class="text-slate-300 hover:text-white p-2">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Drawer -->
+        <div id="mobile-menu" class="hidden md:hidden bg-navy-900 border-b border-slate-800 px-4 pt-2 pb-4 space-y-2">
+            <button onclick="switchTab('sim')" class="w-full text-left px-3 py-2 rounded-md text-slate-200 hover:bg-slate-800 flex items-center gap-3">
+                <i class="fa-solid fa-gamepad text-cyan"></i> 互動戰術模擬板
+            </button>
+            <button onclick="switchTab('rules')" class="w-full text-left px-3 py-2 rounded-md text-slate-200 hover:bg-slate-800 flex items-center gap-3">
+                <i class="fa-solid fa-book-bookmark text-cyan"></i> 賽制與規則
+            </button>
+            <button onclick="switchTab('aero')" class="w-full text-left px-3 py-2 rounded-md text-slate-200 hover:bg-slate-800 flex items-center gap-3">
+                <i class="fa-solid fa-wind text-cyan"></i> 氣流理論圖解
+            </button>
+            <button onclick="switchTab('quiz')" class="w-full text-left px-3 py-2 rounded-md text-slate-200 hover:bg-slate-800 flex items-center gap-3">
+                <i class="fa-solid fa-graduation-cap text-rose"></i> 攻防心法與測驗
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Body Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-2 sm:px-4 lg:px-8 py-6">
+
+        <!-- ========================================================================= -->
+        <!-- TAB 1: 互動戰術模擬板 (SIMULATOR) -->
+        <!-- ========================================================================= -->
+        <section id="tab-sim" class="tab-content space-y-6">
+            
+            <!-- Control Header & Preset Selectors -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 bg-navy-900 p-4 rounded-2xl border border-slate-800 tech-glow">
+                
+                <!-- Left Controls: Playback & Mode -->
+                <div class="lg:col-span-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-tech text-cyan uppercase tracking-wider font-bold">● 模擬控制台 Simulation Controls</span>
+                        <div class="flex gap-2">
+                            <button id="btn-play" onclick="togglePlay()" class="bg-cyan hover:bg-cyan-glow text-navy-950 font-bold px-4 py-1.5 rounded-lg text-sm transition flex items-center gap-2 shadow-lg shadow-cyan/20">
+                                <i class="fa-solid fa-play" id="play-icon"></i> <span id="play-text">播放演練</span>
+                            </button>
+                            <button onclick="resetSim()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-sm transition">
+                                <i class="fa-solid fa-rotate-left"></i> 重置
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Speed & Layer Controls -->
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <span class="text-slate-400">速度:</span>
+                        <button onclick="setSpeed(0.5)" id="spd-05" class="speed-btn px-2 py-1 rounded bg-slate-800 text-slate-300">0.5x</button>
+                        <button onclick="setSpeed(1.0)" id="spd-10" class="speed-btn px-2 py-1 rounded bg-cyan text-navy-950 font-bold">1.0x</button>
+                        <button onclick="setSpeed(1.5)" id="spd-15" class="speed-btn px-2 py-1 rounded bg-slate-800 text-slate-300">1.5x</button>
+                        <div class="h-4 w-[1px] bg-slate-700 mx-1"></div>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="chk-downwash" checked onchange="drawCanvases()" class="sr-only peer">
+                            <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan"></div>
+                            <span class="ml-1.5 text-slate-300">下洗氣流</span>
+                        </label>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="chk-ground" checked onchange="drawCanvases()" class="sr-only peer">
+                            <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan"></div>
+                            <span class="ml-1.5 text-slate-300">地面效應</span>
+                        </label>
+                    </div>
+
+                    <!-- Attack Mode Toggle & Select -->
+                    <div class="bg-navy-950 p-2.5 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-rose font-bold flex items-center gap-1"><i class="fa-solid fa-jet-fighter-up"></i> 紅隊進攻模式 (Striker)</span>
+                            <div class="flex bg-navy-900 rounded-lg p-0.5 border border-slate-700">
+                                <button onclick="setAttackMode('preset')" id="mode-preset-btn" class="px-2 py-0.5 rounded text-[11px] font-medium bg-rose text-white">預設軌跡</button>
+                                <button onclick="setAttackMode('draw')" id="mode-draw-btn" class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-white">手繪自訂</button>
+                            </div>
+                        </div>
+
+                        <!-- Preset Dropdown -->
+                        <div id="preset-attack-wrap">
+                            <select id="attack-preset-select" onchange="changeAttackPreset(this.value)" class="w-full bg-navy-900 border border-slate-700 text-slate-200 text-xs rounded-lg p-2 focus:ring-1 focus:ring-rose outline-none">
+                                <option value="1">1. 貼地突襲 ＋ 門前急升 (地面效應衝刺)</option>
+                                <option value="2">2. 高空斜切俯衝穿門 (避開低空封鎖與VRS)</option>
+                                <option value="3">3. S 型立體蛇行假動作 (多維晃動突破)</option>
+                                <option value="4">4. 邊線高速繞背切入 (利用邊界貼防)</option>
+                                <option value="5">5. 中路假動作急停變向 (引誘清道夫撞空)</option>
+                                <option value="6">6. 隊友擋拆清門破門 (紅隊清道夫推開守門員)</option>
+                                <option value="7">7. 進球後極速回防解越位 (穿門後退回中線)</option>
+                            </select>
+                        </div>
+
+                        <!-- Draw Controls (Hidden by default) -->
+                        <div id="draw-attack-wrap" class="hidden text-xs space-y-1.5">
+                            <p class="text-slate-400 text-[11px]">請直接在上方【俯視圖】用滑鼠/手指繪製進攻路徑：</p>
+                            <div class="flex items-center gap-2">
+                                <select id="draw-height-select" onchange="updateCustomPathZProfile()" class="bg-navy-900 border border-slate-700 text-slate-200 text-xs rounded p-1">
+                                    <option value="ground">高度: 貼地急升 (0.4m -> 2.0m)</option>
+                                    <option value="high">高度: 高空俯衝 (2.8m -> 2.0m)</option>
+                                    <option value="flat">高度: 中空平飛 (2.0m 保持)</option>
+                                    <option value="wave">高度: 高低波浪 (1.0m ~ 2.8m)</option>
+                                </select>
+                                <button onclick="clearCustomDraw()" class="bg-rose/20 text-rose border border-rose/40 px-2 py-1 rounded text-[11px] hover:bg-rose/30">
+                                    <i class="fa-solid fa-eraser"></i> 清除手繪
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Controls: 12 Defensive Tactics Matrix -->
+                <div class="lg:col-span-7 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-tech text-cyan uppercase tracking-wider font-bold">● 藍隊防守 12 大戰術 (Defense Tactics AI)</span>
+                        <span class="text-[11px] text-slate-400">點擊切換藍隊守門員與清道夫走位</span>
+                    </div>
+
+                    <!-- Tactic Category Buttons -->
+                    <div class="grid grid-cols-3 gap-1.5 text-xs">
+                        <!-- Category 1: 站位聯防 -->
+                        <div class="space-y-1">
+                            <div class="text-[10px] text-cyan font-bold px-1 border-l-2 border-cyan">【站位聯防類】</div>
+                            <button onclick="setDef Tactic(1)" id="def-btn-1" class="def-tactic-btn w-full text-left p-1.5 rounded border border-slate-800 bg-navy-950 hover:border-cyan text-[11px] truncate">1. 前後縱深雙層防線</button>
+                            <button onclick="setDefTactic(2)" id="def-btn-2" class="def-tactic-btn w-full text-left p-1.5 rounded border border-slate-800 bg-navy-950 hover:border-cyan text-[11px] truncate">2. 門前高低錯位聯防</button>
+                            <button onclick="setDefTactic(3)" id="def-btn-3" class="def-tactic-btn w-full text-left p-1.5 rounded border border-slate-800 bg-navy-950 hover:border-cyan text-[11px] truncate">3. 門前八字斜角封鎖</button>
+                            <button onclick="setDefTactic(4)" id="def-btn-4" class="def-tactic-btn w-full text-left p-1.5 rounded border border-slate-800 bg-navy-950 hover:border-cyan text-[11px] truncate">4. 最後30秒鐵桶死守</button>
+                        </div>
+                        <!-- Category 2: 氣流壓制 -->
+                        <div class="space-y-1">
+                            <div class="text-[10px] text-cyan font-bold px-1 border-l-2 border-cyan">【氣流與空間壓制】</div>
+                            <button onclick="setDefTactic(5)" id="def-btn-5" class="def-tactic-btn w-full text-left p-1.5 rounded border border-slate-800 bg-navy-950 hover:border-cyan text-[11px] truncate">5. 高空下洗氣流壓制</button>
+                            <button onclick="setDefTactic(6)" id="def-btn-6" class="def-tactic-btn w-full text-left p-1.5 rounded border border-slate-800 bg-navy-950 hover:border-cyan text-[11px] truncate">6. 貼地封鎖(反地面效應)</button>
+                            <button onclick="setDefTactic(7)" id="def-btn-7" class="def-tactic-btn w-full text-left p-1.5 rounded border border-slate-800 bg-navy-950 hover:border-cyan text-[11px] truncate">7. 高位中場逼搶斷節奏</button>
+                            <button onclick="setDefTactic(8)" id="def-btn-8" class="def-tactic-btn w-full text-left p-1.5 rounded border border-slate-800 bg-navy-950 hover:border-cyan text-[11px] truncate">8. 45° 側翼斜切夾擊</button>
+                        </div>
+                        <!-- Category 3: 動態輪轉 -->
+                        <div class="space-y-1">
+                            <div class="text-[10px] text-cyan font-bold px-1 border-l-2 border-cyan">【動態攔截與輪轉】</div>
+                            <button onclick="setDefTactic(9)" id="def-btn-9" class="def-tactic-btn w-full text-left p-1.5 rounded border border-slate-800 bg-navy-950 hover:border-cyan text-[11px] truncate">9. 逼向邊網困籠戰術</button>
+                            <button onclick="setDefTactic(10)" id="def-btn-10" class="def-tactic-btn w-full text-left p-1.5 rounded border border-slate-800 bg-navy-950 hover:border-cyan text-[11px] truncate">10. 守門員失位極速補門</button>
+                            <button onclick="setDefTactic(11)" id="def-btn-11" class="def-tactic-btn w-full text-left p-1.5 rounded border border-slate-800 bg-navy-950 hover:border-cyan text-[11px] truncate">11. 門前畫圓機動封堵</button>
+                            <button onclick="setDefTactic(12)" id="def-btn-12" class="def-tactic-btn w-full text-left p-1.5 rounded border border-slate-800 bg-navy-950 hover:border-cyan text-[11px] truncate">12. 由守轉攻擋拆反擊</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CANVASES DUAL-VIEW CONTAINER -->
+            <div class="grid grid-cols-1 gap-4">
+                
+                <!-- 1. Top-Down View Canvas (X-Y Plane) -->
+                <div class="bg-navy-900 p-3 rounded-2xl border border-slate-800 relative shadow-2xl">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-cyan animate-ping"></span>
+                            <h3 class="text-xs font-bold font-tech text-slate-200 tracking-wider">
+                                俯視平面圖 TOP-DOWN VIEW (X-Y 平面: 8.0m × 4.0m)
+                            </h3>
+                        </div>
+                        <span class="text-[11px] text-slate-400 bg-navy-950 px-2 py-0.5 rounded border border-slate-800">
+                            拖曳機體改變 (X,Y) ｜ 筆刷繪製進攻軌跡
+                        </span>
+                    </div>
+
+                    <div class="relative w-full aspect-[2/1] bg-navy-950 rounded-xl overflow-hidden border border-slate-800">
+                        <canvas id="canvas-top" class="w-full h-full block cursor-crosshair"></canvas>
+
+                        <!-- Field Annotations Overlay -->
+                        <div class="absolute top-2 left-3 pointer-events-none text-[10px] text-rose font-bold bg-navy-950/80 px-2 py-0.5 rounded border border-rose/30">
+                            紅隊陣地 (x=0m)
+                        </div>
+                        <div class="absolute top-2 right-3 pointer-events-none text-[10px] text-cyan font-bold bg-navy-950/80 px-2 py-0.5 rounded border border-cyan/30">
+                            藍隊防守門 (x=7.2m)
+                        </div>
+                        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 pointer-events-none text-[10px] text-slate-500 font-tech">
+                            中線 x = 4.0m (越位解鎖線)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Side Elevation View Canvas (X-Z Plane) -->
+                <div class="bg-navy-900 p-3 rounded-2xl border border-slate-800 relative shadow-2xl">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-rose animate-ping"></span>
+                            <h3 class="text-xs font-bold font-tech text-slate-200 tracking-wider">
+                                側面高度剖面圖 SIDE ELEVATION VIEW (X-Z 平面: 8.0m × 3.5m)
+                            </h3>
+                        </div>
+                        <span class="text-[11px] text-slate-400 bg-navy-950 px-2 py-0.5 rounded border border-slate-800">
+                            觀察下洗氣流柱與地面效應帶 ｜ 拖曳機體調高度 Z
+                        </span>
+                    </div>
+
+                    <div class="relative w-full aspect-[8/3.5] bg-navy-950 rounded-xl overflow-hidden border border-slate-800">
+                        <canvas id="canvas-side" class="w-full h-full block cursor-pointer"></canvas>
+
+                        <!-- Ground Effect Label -->
+                        <div class="absolute bottom-2 left-4 pointer-events-none text-[10px] text-cyan/70 bg-navy-950/80 px-2 py-0.5 rounded border border-cyan/20">
+                            地面效應區 (z = 0 ~ 0.45m)
+                        </div>
+                        <div class="absolute top-2 right-12 pointer-events-none text-[10px] text-slate-400 bg-navy-950/80 px-2 py-0.5 rounded border border-slate-800">
+                            球門懸掛高度 z = 2.0m (內徑 0.5m)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REAL-TIME TELEMETRY & MATCHUP ANALYSIS HUD -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                
+                <!-- Telemetry Gauges Card -->
+                <div class="bg-navy-900 p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <h4 class="text-xs font-bold font-tech text-cyan flex items-center gap-2">
+                            <i class="fa-solid fa-gauge-high"></i> 進攻機實時遙測 HUD
+                        </h4>
+                        <span id="telemetry-status" class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                            正常飛行 Normal
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div class="bg-navy-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 text-[11px]">飛行高度 (Z)</span>
+                            <div class="text-xl font-bold font-tech text-cyan mt-1" id="hud-z">0.50 m</div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                                <div id="hud-z-bar" class="bg-cyan h-full transition-all duration-100" style="width: 15%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-navy-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 text-[11px]">衝刺速度 (Speed)</span>
+                            <div class="text-xl font-bold font-tech text-rose mt-1" id="hud-speed">4.2 m/s</div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                                <div id="hud-speed-bar" class="bg-rose h-full transition-all duration-100" style="width: 60%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Downwash & VRS Status Box -->
+                    <div class="bg-navy-950 p-2.5 rounded-xl border border-slate-800 space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">下洗氣流壓制力:</span>
+                            <span id="hud-downwash-text" class="text-slate-300 font-bold">無受干擾</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">渦環風險 (VRS):</span>
+                            <span id="hud-vrs-text" class="text-emerald-400 font-bold">安全 (斜向流動)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Matchup Tactical Breakdown Card -->
+                <div class="lg:col-span-2 bg-navy-900 p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <h4 class="text-xs font-bold font-tech text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-chess-board text-rose"></i> 當前攻防對陣解析 (Matchup Analysis)
+                        </h4>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400">預估進球成功率:</span>
+                            <span id="hud-success-rate" class="text-base font-bold font-tech text-cyan">78%</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div class="bg-navy-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                            <div class="text-rose font-bold flex items-center gap-1.5" id="tactic-attack-title">
+                                <i class="fa-solid fa-play"></i> 1. 貼地突襲 ＋ 門前急升
+                            </div>
+                            <p class="text-slate-300 leading-relaxed text-[11px]" id="tactic-attack-desc">
+                                利用地面效應氣墊降低阻力高速衝刺，衝至藍隊門前 1.5m 處大油門急升穿門。
+                            </p>
+                        </div>
+                        <div class="bg-navy-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                            <div class="text-cyan font-bold flex items-center gap-1.5" id="tactic-def-title">
+                                <i class="fa-solid fa-shield-halved"></i> 1. 前後縱深雙層防線
+                            </div>
+                            <p class="text-slate-300 leading-relaxed text-[11px]" id="tactic-def-desc">
+                                清道夫前置於 5.0m 迫使進攻機提早變向；守門員鎮守 6.65m 封死最終門心。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Voice Callout Box -->
+                    <div class="bg-navy-950/60 p-2.5 rounded-xl border border-cyan/20 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-bullhorn text-cyan"></i>
+                            <span class="text-slate-400">場上推薦口令:</span>
+                            <span class="text-cyan font-bold" id="tactic-voice-call">「清隊友！準備擋拆！進攻機準備門前急升！」</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 font-tech">VOICE COMMAND</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 2: 賽制與基礎規則 (RULES) -->
+        <!-- ========================================================================= -->
+        <section id="tab-rules" class="tab-content hidden space-y-6">
+            <div class="bg-navy-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-6">
+                <div class="border-b border-slate-800 pb-4">
+                    <h2 class="text-xl font-bold font-tech text-white flex items-center gap-3">
+                        <i class="fa-solid fa-trophy text-cyan"></i> 3v3 無人機足球（Class 20）賽制與標準規格
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">國際無人機足球聯盟 FIDA / FAI 賽事標準規範與裁判執裁要點</p>
+                </div>
+
+                <!-- 4 Quick Specs Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-navy-950 p-4 rounded-xl border border-slate-800 text-center space-y-1">
+                        <i class="fa-solid fa-vector-square text-cyan text-2xl mb-1"></i>
+                        <h4 class="text-xs text-slate-400 font-bold">全封閉球場規格</h4>
+                        <p class="text-lg font-bold font-tech text-white">8m × 4m × 3.5m</p>
+                        <span class="text-[10px] text-slate-500">全圍防撞網與金屬防護圍欄</span>
+                    </div>
+                    <div class="bg-navy-950 p-4 rounded-xl border border-slate-800 text-center space-y-1">
+                        <i class="fa-solid fa-drone text-rose text-2xl mb-1"></i>
+                        <h4 class="text-xs text-slate-400 font-bold">機體與球籠規格</h4>
+                        <p class="text-lg font-bold font-tech text-white">直徑 20cm / &lt;110g</p>
+                        <span class="text-[10px] text-slate-500">保護籠、紅藍 LED、進攻機標記</span>
+                    </div>
+                    <div class="bg-navy-950 p-4 rounded-xl border border-slate-800 text-center space-y-1">
+                        <i class="fa-solid fa-circle-dot text-amber-400 text-2xl mb-1"></i>
+                        <h4 class="text-xs text-slate-400 font-bold">懸掛圓形球門</h4>
+                        <p class="text-lg font-bold font-tech text-white">內徑 30~50 cm</p>
+                        <span class="text-[10px] text-slate-500">中心高 2.0m，懸掛於距端線 0.8m</span>
+                    </div>
+                    <div class="bg-navy-950 p-4 rounded-xl border border-slate-800 text-center space-y-1">
+                        <i class="fa-solid fa-stopwatch text-emerald-400 text-2xl mb-1"></i>
+                        <h4 class="text-xs text-slate-400 font-bold">比賽時間與局制</h4>
+                        <p class="text-lg font-bold font-tech text-white">三局兩勝 / 每局 3min</p>
+                        <span class="text-[10px] text-slate-500">局間 3 分鐘修補與更換電池</span>
+                    </div>
+                </div>
+
+                <!-- 4 Core Rules Detailed Breakdown -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    
+                    <!-- Rule 1: 得分判定 -->
+                    <div class="bg-navy-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">1</div>
+                            <h3 class="text-base font-bold text-white">正面完全穿門得分判定</h3>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            只有指定的<strong class="text-rose">進攻機（帶綵帶或特殊燈光標記）</strong>從球門正面（由中線向端線方向）完全穿過圓環才計 1 分。若機體僅穿過半個身位即被撞回、或反向穿門，均不計得分。
+                        </p>
+                        <div class="bg-navy-900 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400">
+                            ⚠️ <strong>注意事項：</strong> 若進攻機標記在衝撞中脫落，須等局間暫停重新掛載，脫落期間穿門無效。
+                        </div>
+                    </div>
+
+                    <!-- Rule 2: 越位與重置 -->
+                    <div class="bg-navy-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-cyan/20 text-cyan flex items-center justify-center font-bold">2</div>
+                            <h3 class="text-base font-bold text-white">進球後「退回中線解除越位」</h3>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            進攻機每成功穿門得分一次，必須<strong class="text-cyan">完全退回中線（x = 4.0m）後方</strong>，解除「越位狀態」後方可發動下一波進攻。未退回中線連續穿門者判為無效得分。
+                        </p>
+                        <div class="bg-navy-900 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400">
+                            💡 <strong>戰術訣竅：</strong> 得分後應立刻低空高速拉回，同時確認防守陣型漏洞，抓準對方未回位瞬間快攻。
+                        </div>
+                    </div>
+
+                    <!-- Rule 3: 嚴禁反向穿門與塞門 -->
+                    <div class="bg-navy-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-rose/20 text-rose flex items-center justify-center font-bold">3</div>
+                            <h3 class="text-base font-bold text-white">嚴禁「反向穿門」與「塞門」犯規</h3>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            防守無人機嚴禁由球門後方反向穿過門環，或長期將機身完全卡死在門洞內（塞門）。防守機被衝撞推入門內後，必須立刻由下方或側邊脫離，不可反向拉回。
+                        </p>
+                        <div class="bg-navy-900 p-2.5 rounded-xl border border-slate-800 text-[11px] text-rose-300">
+                            ⛔ <strong>判罰：</strong> 犯規將給予對手一次 1v1 點球機會，犯規機體須停飛 15 秒。
+                        </div>
+                    </div>
+
+                    <!-- Rule 4: 1v1 點球大戰機制 -->
+                    <div class="bg-navy-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">4</div>
+                            <h3 class="text-base font-bold text-white">1v1 點球大戰（Penalty Shootout）</h3>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            當出現嚴重犯規或平局加時賽時，執行 1v1 點球：攻方進攻機自中線起飛，守門員於門前防守，限時 15 秒內衝刺穿門。
+                        </p>
+                        <div class="bg-navy-900 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400">
+                            🎯 <strong>點球心法：</strong> 攻方需利用搖桿假動作騙開守門員重心，守門員需保持門前微幅搖擺保持反應感。
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 3: 空氣動力學與氣流理論 (AERODYNAMICS) -->
+        <!-- ========================================================================= -->
+        <section id="tab-aero" class="tab-content hidden space-y-6">
+            <div class="bg-navy-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-6">
+                <div class="border-b border-slate-800 pb-4">
+                    <h2 class="text-xl font-bold font-tech text-white flex items-center gap-3">
+                        <i class="fa-solid fa-wind text-cyan"></i> 無人機足球五大流體力學與氣流現象
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">理解三維空間看不見的氣流場，是區分新手與頂尖飛手的核心門檻</p>
+                </div>
+
+                <!-- 5 Visual Aerodynamic Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Aero 1: 下洗氣流 -->
+                    <div class="bg-navy-950 p-5 rounded-2xl border border-slate-800 space-y-3 tech-border">
+                        <div class="h-32 bg-navy-900 rounded-xl flex items-center justify-center relative overflow-hidden">
+                            <!-- SVG Diagram: Downwash -->
+                            <svg class="w-full h-full" viewBox="0 0 200 120">
+                                <circle cx="100" cy="30" r="16" fill="#06B6D4" opacity="0.8"/>
+                                <path d="M75 45 L100 110 L125 45 Z" fill="url(#downwashGrad)" opacity="0.5"/>
+                                <circle cx="100" cy="80" r="14" fill="#F43F5E" opacity="0.8"/>
+                                <path d="M90 70 L100 85 L110 70" stroke="#FFF" stroke-width="2" fill="none"/>
+                                <defs>
+                                    <linearGradient id="downwashGrad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.8"/>
+                                        <stop offset="100%" stop-color="#06B6D4" stop-opacity="0.0"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <h3 class="text-sm font-bold text-cyan">1. 下洗氣流 (Downwash) 與高空壓制</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            旋翼高速旋轉向下排出強勁亂流柱（延伸 1~1.5m）。上方機體會瓦解下方機體的有效升力，導致下方機體不受控失速掉高。
+                        </p>
+                        <div class="text-[11px] text-rose font-bold">戰術鐵律：絕不可停留在敵方無人機正下方！</div>
+                    </div>
+
+                    <!-- Aero 2: 渦環狀態 -->
+                    <div class="bg-navy-950 p-5 rounded-2xl border border-slate-800 space-y-3 tech-border">
+                        <div class="h-32 bg-navy-900 rounded-xl flex items-center justify-center relative overflow-hidden">
+                            <svg class="w-full h-full" viewBox="0 0 200 120">
+                                <circle cx="100" cy="50" r="16" fill="#F43F5E" opacity="0.8"/>
+                                <!-- Vortex Rings -->
+                                <path d="M70 50 C 60 20, 60 80, 75 70" stroke="#FB7185" stroke-width="2.5" fill="none" stroke-dasharray="3,3"/>
+                                <path d="M130 50 C 140 20, 140 80, 125 70" stroke="#FB7185" stroke-width="2.5" fill="none" stroke-dasharray="3,3"/>
+                                <path d="M100 65 L100 95" stroke="#F43F5E" stroke-width="2" stroke-dasharray="2,2"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-sm font-bold text-rose">2. 渦環狀態 (Vortex Ring State, VRS)</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            純垂直急降時，機體會掉入自己產生的尾流渦環中，造成劇烈搖擺失控。即使猛推油門也無法立刻止跌。
+                        </p>
+                        <div class="text-[11px] text-cyan font-bold">解法：下降必須伴隨水平移動（斜向俯衝）。</div>
+                    </div>
+
+                    <!-- Aero 3: 地面效應 -->
+                    <div class="bg-navy-950 p-5 rounded-2xl border border-slate-800 space-y-3 tech-border">
+                        <div class="h-32 bg-navy-900 rounded-xl flex items-center justify-center relative overflow-hidden">
+                            <svg class="w-full h-full" viewBox="0 0 200 120">
+                                <line x1="10" y1="105" x2="190" y2="105" stroke="#334155" stroke-width="3"/>
+                                <rect x="10" y="85" width="180" height="20" fill="#06B6D4" opacity="0.15"/>
+                                <circle cx="100" cy="70" r="15" fill="#F43F5E" opacity="0.8"/>
+                                <path d="M70 100 Q100 80 130 100" stroke="#06B6D4" stroke-width="2" fill="none"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-sm font-bold text-emerald-400">3. 地面效應 (Ground Effect)</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            貼地飛行（z &lt; 0.45m）時，下洗氣流受地面阻擋形成高壓氣墊，阻力降低且加速更省電，適合貼地突襲。
+                        </p>
+                        <div class="text-[11px] text-slate-400">注意：貼地急煞時會有輕微上浮感，需微調油門。</div>
+                    </div>
+
+                    <!-- Aero 4: 網壁效應 -->
+                    <div class="bg-navy-950 p-5 rounded-2xl border border-slate-800 space-y-3 tech-border">
+                        <div class="h-32 bg-navy-900 rounded-xl flex items-center justify-center relative overflow-hidden">
+                            <svg class="w-full h-full" viewBox="0 0 200 120">
+                                <!-- Mesh Wall -->
+                                <line x1="170" y1="10" x2="170" y2="110" stroke="#06B6D4" stroke-width="2"/>
+                                <line x1="170" y1="30" x2="195" y2="30" stroke="#06B6D4" stroke-width="1"/>
+                                <line x1="170" y1="60" x2="195" y2="60" stroke="#06B6D4" stroke-width="1"/>
+                                <circle cx="120" cy="60" r="15" fill="#F43F5E" opacity="0.8"/>
+                                <path d="M135 60 Q155 60 165 45" stroke="#F43F5E" stroke-width="2" fill="none"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-sm font-bold text-amber-400">4. 網壁效應 (Wall Effect) 與掛網風險</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            貼近四周防撞網時，氣流穿網受阻產生局部吸引與反彈亂流。球籠外框極易勾住網繩導致掛網事故。
+                        </p>
+                        <div class="text-[11px] text-amber-300">安全原則：飛離網壁至少保留半個機身距離。</div>
+                    </div>
+
+                    <!-- Aero 5: 門前混戰亂流疊加 -->
+                    <div class="bg-navy-950 p-5 rounded-2xl border border-slate-800 space-y-3 tech-border lg:col-span-2">
+                        <div class="h-32 bg-navy-900 rounded-xl flex items-center justify-center relative overflow-hidden">
+                            <svg class="w-full h-full" viewBox="0 0 300 120">
+                                <circle cx="100" cy="50" r="14" fill="#F43F5E"/>
+                                <circle cx="140" cy="40" r="14" fill="#06B6D4"/>
+                                <circle cx="120" cy="80" r="14" fill="#3B82F6"/>
+                                <circle cx="210" cy="60" r="18" fill="none" stroke="#EAB308" stroke-width="4"/>
+                                <!-- Turbulent Air Arrows -->
+                                <path d="M80 70 Q110 50 130 90 T160 60" stroke="#64748B" stroke-width="2" fill="none" stroke-dasharray="2,2"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-sm font-bold text-purple-400">5. 門前多機亂流疊加 (Multi-Drone Turbulence)</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            當 3~4 架無人機擠在門前狹小區域時，多股下洗氣流與側向尾流交織形成極不穩定的強亂流區。此時油門響應極度敏感，需緊盯高度進行高頻微調。
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 4: 攻防策略、語音口令與隨堂測驗 (QUIZ) -->
+        <!-- ========================================================================= -->
+        <section id="tab-quiz" class="tab-content hidden space-y-6">
+            
+            <!-- Tactical Voice Callouts & Cheat Sheet -->
+            <div class="bg-navy-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                <h3 class="text-lg font-bold font-tech text-white flex items-center gap-2">
+                    <i class="fa-solid fa-comments text-cyan"></i> 3v3 場上標準語音口令與實戰心法
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    <div class="bg-navy-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                        <span class="text-rose font-bold">【敵方高空壓制】</span>
+                        <div class="text-cyan font-mono font-bold">「頭上有機！閃左！」</div>
+                        <p class="text-slate-400 text-[11px]">進攻機立刻水平脫離下洗氣流柱，切忌原地推大油門硬頂。</p>
+                    </div>
+                    <div class="bg-navy-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                        <span class="text-rose font-bold">【呼叫隊友擋拆】</span>
+                        <div class="text-cyan font-mono font-bold">「清門！三二一！」</div>
+                        <p class="text-slate-400 text-[11px]">己方清道夫高速撞開敵方守門員，進攻機延遲 0.5 秒切入穿門。</p>
+                    </div>
+                    <div class="bg-navy-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                        <span class="text-cyan font-bold">【守門員失位補門】</span>
+                        <div class="text-cyan font-mono font-bold">「我飛了！補門！」</div>
+                        <p class="text-slate-400 text-[11px]">守門員遭撞飛時，清道夫立刻放棄中場全速回縮門心補位。</p>
+                    </div>
+                    <div class="bg-navy-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                        <span class="text-cyan font-bold">【得分解除越位】</span>
+                        <div class="text-cyan font-mono font-bold">「進了！全退！過線！」</div>
+                        <p class="text-slate-400 text-[11px]">全隊迅速退過中線，確認過線瞬間喊「過線」開啟下一波快攻。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Quiz Component -->
+            <div class="bg-navy-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="text-xl font-bold font-tech text-white flex items-center gap-3">
+                            <i class="fa-solid fa-graduation-cap text-rose"></i> 3v3 無人機足球隨堂戰術測驗
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-1">考驗你對氣流物理、規則判罰與雙人防守輪轉的理解</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400">目前得分</span>
+                        <div class="text-2xl font-bold font-tech text-cyan" id="quiz-score">0 / 50</div>
+                    </div>
+                </div>
+
+                <!-- Quiz Container -->
+                <div id="quiz-box" class="space-y-6">
+                    <!-- Questions injected via JS -->
+                </div>
+
+                <!-- Quiz Reset Button -->
+                <div class="text-center pt-4">
+                    <button onclick="resetQuiz()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-6 py-2 rounded-xl text-sm transition">
+                        <i class="fa-solid fa-rotate"></i> 重新作答測驗
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-navy-900 border-t border-slate-800 py-6 mt-12 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>無人機足球 3v3 互動教學與戰術模擬平台 Drone Soccer Interactive Tactical Platform</p>
+            <p class="mt-1">符合 FIDA / FAI Class 20 競賽規範 ｜ 支援電腦大螢幕投影與觸控平台</p>
+        </div>
+    </footer>
+
+    <!-- ========================================================================= -->
+    <!-- JAVASCRIPT LOGIC & CANVAS ENGINE -->
+    <!-- ========================================================================= -->
+    <script>
+        /* -------------------------------------------------------------------------
+           1. GLOBAL STATE & CONFIGURATION
+           ------------------------------------------------------------------------- */
+        const ARENA = { x: 8.0, y: 4.0, z: 3.5, goalX_Red: 0.8, goalX_Blue: 7.2, goalY: 2.0, goalZ: 2.0, goalR: 0.25 };
+        
+        let simState = {
+            playing: false,
+            time: 0, // 0 to 1 along trajectory
+            speed: 1.0,
+            attackMode: 'preset', // 'preset' or 'draw'
+            attackPresetId: 1,
+            defTacticId: 1,
+            customPath: [], // Array of {x, y, z}
+            isDrawing: false
+        };
+
+        // 6 Drones State (Coordinates in Meters)
+        let drones = {
+            R1: { id: 'R1', team: 'red', role: '進攻機', x: 1.5, y: 2.0, z: 0.5, vx: 0, vy: 0, vz: 0, inDownwash: false, inVRS: false },
+            R2: { id: 'R2', team: 'red', role: '清道夫', x: 2.2, y: 1.2, z: 1.8 },
+            R3: { id: 'R3', team: 'red', role: '守門員', x: 0.8, y: 2.0, z: 2.0 },
+            B1: { id: 'B1', team: 'blue', role: '守門員', x: 6.7, y: 2.0, z: 2.0 },
+            B2: { id: 'B2', team: 'blue', role: '清道夫', x: 5.0, y: 2.6, z: 2.2 },
+            B3: { id: 'B3', team: 'blue', role: '待命機', x: 7.5, y: 3.2, z: 1.0 }
+        };
+
+        // Dragging State
+        let draggedDrone = null;
+
+        /* -------------------------------------------------------------------------
+           2. TAB NAVIGATION & CANVAS INITIALIZATION
+           ------------------------------------------------------------------------- */
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-cyan', 'text-navy-950', 'font-bold', 'shadow-md');
+                btn.classList.add('text-slate-300');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-cyan', 'text-navy-950', 'font-bold', 'shadow-md');
+                activeBtn.classList.remove('text-slate-300');
+            }
+
+            if (tabId === 'sim') {
+                setTimeout(resizeCanvases, 50);
+            }
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        /* -------------------------------------------------------------------------
+           3. CANVAS ENGINE & DPI HANDLING
+           ------------------------------------------------------------------------- */
+        const canvasTop = document.getElementById('canvas-top');
+        const ctxTop = canvasTop.getContext('2d');
+        const canvasSide = document.getElementById('canvas-side');
+        const ctxSide = canvasSide.getContext('2d');
+
+        function resizeCanvases() {
+            [canvasTop, canvasSide].forEach(canvas => {
+                if (!canvas) return;
+                const rect = canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+            });
+            drawCanvases();
+        }
+
+        window.addEventListener('resize', resizeCanvases);
+
+        // Coordinate Conversions (Meters -> Pixels)
+        function mToPxTop(x, y) {
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvasTop.width / dpr;
+            const h = canvasTop.height / dpr;
+            return {
+                px: (x / ARENA.x) * w,
+                py: (y / ARENA.y) * h
+            };
+        }
+
+        function pxToMTop(px, py) {
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvasTop.width / dpr;
+            const h = canvasTop.height / dpr;
+            return {
+                x: Math.max(0.2, Math.min(7.8, (px / w) * ARENA.x)),
+                y: Math.max(0.2, Math.min(3.8, (py / h) * ARENA.y))
+            };
+        }
+
+        function mToPxSide(x, z) {
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvasSide.width / dpr;
+            const h = canvasSide.height / dpr;
+            return {
+                px: (x / ARENA.x) * w,
+                pz: h - (z / ARENA.z) * h
+            };
+        }
+
+        function pxToMSide(px, pz) {
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvasSide.width / dpr;
+            const h = canvasSide.height / dpr;
+            return {
+                x: Math.max(0.2, Math.min(7.8, (px / w) * ARENA.x)),
+                z: Math.max(0.2, Math.min(3.3, ((h - pz) / h) * ARENA.z))
+            };
+        }
+
+        /* -------------------------------------------------------------------------
+           4. PRESET TRAJECTORIES & DEFENSIVE AI
+           ------------------------------------------------------------------------- */
+        function getAttackTrajectoryPoint(t) {
+            if (simState.attackMode === 'draw' && simState.customPath.length > 1) {
+                const idx = Math.min(Math.floor(t * (simState.customPath.length - 1)), simState.customPath.length - 1);
+                return simState.customPath[idx];
+            }
+
+            // 7 Presets
+            let x = 1.0 + t * 6.3;
+            let y = 2.0;
+            let z = 2.0;
+
+            switch (parseInt(simState.attackPresetId)) {
+                case 1: // 貼地突襲 + 門前急升
+                    y = 2.0 + Math.sin(t * Math.PI) * 0.3;
+                    z = t < 0.75 ? 0.45 : 0.45 + ((t - 0.75) / 0.25) * 1.55;
+                    break;
+                case 2: // 高空斜切俯衝
+                    y = 2.0 - Math.sin(t * Math.PI) * 0.8;
+                    z = t < 0.6 ? 2.9 : 2.9 - ((t - 0.6) / 0.4) * 0.9;
+                    break;
+                case 3: // S型立體蛇行
+                    y = 2.0 + Math.sin(t * Math.PI * 3) * 1.2;
+                    z = 2.0 + Math.cos(t * Math.PI * 2) * 0.8;
+                    break;
+                case 4: // 邊線繞背切入
+                    y = t < 0.7 ? 0.6 : 0.6 + ((t - 0.7) / 0.3) * 1.4;
+                    z = 1.8 + Math.sin(t * Math.PI) * 0.4;
+                    break;
+                case 5: // 中路假動作急停變向
+                    if (t < 0.5) y = 2.0 + t * 2.0;
+                    else y = 3.0 - ((t - 0.5) / 0.5) * 1.0;
+                    z = 1.8;
+                    break;
+                case 6: // 隊友擋拆清門
+                    y = 2.0;
+                    z = 2.0;
+                    break;
+                case 7: // 進球後回防解越位
+                    if (t < 0.6) {
+                        x = 1.0 + (t / 0.6) * 6.3;
+                        y = 2.0;
+                        z = 2.0;
+                    } else {
+                        // Return to centerline
+                        const retT = (t - 0.6) / 0.4;
+                        x = 7.3 - retT * 3.3;
+                        y = 0.8;
+                        z = 0.5;
+                    }
+                    break;
+            }
+            return { x, y, z };
+        }
+
+        function updateDefensiveAI(r1Pos) {
+            // Calculate Blue Keeper (B1) and Sweeper (B2) positions based on tactic
+            let b1 = { x: 6.7, y: 2.0, z: 2.0 };
+            let b2 = { x: 5.0, y: 2.6, z: 2.2 };
+            let r2 = { x: 3.0, y: 1.5, z: 1.8 }; // Red Sweeper
+
+            const t = simState.time;
+            const tactic = parseInt(simState.defTacticId);
+
+            switch (tactic) {
+                case 1: // 前後縱深雙層防線
+                    b2.x = 5.2; b2.y = r1Pos.y * 0.6 + 0.8; b2.z = 2.1;
+                    b1.x = 6.7; b1.y = 2.0 + (r1Pos.y - 2.0) * 0.3; b1.z = 2.0;
+                    break;
+                case 2: // 門前高低錯位聯防
+                    b1.x = 6.6; b1.y = 2.0; b1.z = 2.4; // High
+                    b2.x = 6.0; b2.y = 2.0; b2.z = 1.2; // Low
+                    break;
+                case 3: // 門前八字斜角封鎖
+                    b1.x = 6.5; b1.y = 1.6; b1.z = 2.0;
+                    b2.x = 6.5; b2.y = 2.4; b2.z = 2.0;
+                    break;
+                case 4: // 最後30秒鐵桶死守
+                    b1.x = 6.8; b1.y = 1.9; b1.z = 2.0;
+                    b2.x = 6.8; b2.y = 2.1; b2.z = 2.0;
+                    break;
+                case 5: // 高空下洗氣流壓制
+                    b2.x = Math.max(1.5, r1Pos.x);
+                    b2.y = r1Pos.y;
+                    b2.z = r1Pos.z + 0.55; // Directly above R1
+                    break;
+                case 6: // 貼地封鎖 (反地面效應)
+                    b2.x = 5.6; b2.y = r1Pos.y; b2.z = 0.9;
+                    break;
+                case 7: // 高位中場逼搶
+                    b2.x = 4.2; b2.y = r1Pos.y; b2.z = r1Pos.z;
+                    break;
+                case 8: // 45° 側翼斜切夾擊
+                    b2.x = r1Pos.x + 0.4; b2.y = r1Pos.y + 0.6; b2.z = r1Pos.z;
+                    break;
+                case 9: // 逼向邊網困籠
+                    b2.x = r1Pos.x - 0.2; b2.y = r1Pos.y > 2.0 ? r1Pos.y - 0.6 : r1Pos.y + 0.6; b2.z = r1Pos.z;
+                    break;
+                case 10: // 守門員失位極速補門
+                    if (t > 0.4) {
+                        b1.x = 7.5; b1.y = 0.5; // Displaced
+                        b2.x = 6.7; b2.y = 2.0; b2.z = 2.0; // Sweeper rotates to cover
+                    }
+                    break;
+                case 11: // 門前微幅畫圓機動
+                    b1.x = 6.7;
+                    b1.y = 2.0 + Math.sin(Date.now() / 200) * 0.3;
+                    b1.z = 2.0 + Math.cos(Date.now() / 200) * 0.3;
+                    break;
+                case 12: // 由守轉攻擋拆反擊
+                    b2.x = 3.5; b2.y = 2.0; b2.z = 1.8;
+                    break;
+            }
+
+            // Handle Red Sweeper (R2) Screen Tactic (#6)
+            if (simState.attackPresetId == 6) {
+                r2.x = 6.4; r2.y = 2.0; r2.z = 2.0; // Pushes Blue keeper away
+                if (t > 0.3) b1.y = 1.1; // Blue keeper pushed
+            }
+
+            drones.B1.x = b1.x; drones.B1.y = b1.y; drones.B1.z = b1.z;
+            drones.B2.x = b2.x; drones.B2.y = b2.y; drones.B2.z = b2.z;
+            drones.R2.x = r2.x; drones.R2.y = r2.y; drones.R2.z = r2.z;
+        }
+
+        /* -------------------------------------------------------------------------
+           5. SIMULATION PHYSICS & PHYSICS INTERACTION
+           ------------------------------------------------------------------------- */
+        function updatePhysics() {
+            if (!simState.playing) return;
+
+            simState.time += 0.005 * simState.speed;
+            if (simState.time > 1.0) {
+                simState.time = 0.0; // Loop
+            }
+
+            // Update Red Striker R1 Position
+            const p = getAttackTrajectoryPoint(simState.time);
+            
+            // Calculate velocity
+            drones.R1.vx = (p.x - drones.R1.x) * 10;
+            drones.R1.vy = (p.y - drones.R1.y) * 10;
+            drones.R1.vz = (p.z - drones.R1.z) * 10;
+
+            drones.R1.x = p.x;
+            drones.R1.y = p.y;
+            drones.R1.z = p.z;
+
+            // Update Defensive AI positions
+            updateDefensiveAI(drones.R1);
+
+            // Check Downwash Suppression (R1 under B2 or B1)
+            let downwashHit = false;
+            [drones.B1, drones.B2].forEach(def => {
+                const distXY = Math.hypot(drones.R1.x - def.x, drones.R1.y - def.y);
+                const dz = def.z - drones.R1.z;
+                if (distXY < 0.55 && dz > 0.15 && dz < 1.35) {
+                    downwashHit = true;
+                }
+            });
+
+            drones.R1.inDownwash = downwashHit;
+            if (downwashHit) {
+                // Apply drop & jitter
+                drones.R1.z = Math.max(0.3, drones.R1.z - 0.04);
+                drones.R1.y += (Math.random() - 0.5) * 0.05;
+            }
+
+            // Check VRS (Rapid pure vertical descent)
+            drones.R1.inVRS = (drones.R1.vz < -1.5 && Math.hypot(drones.R1.vx, drones.R1.vy) < 0.5);
+
+            updateHUD();
+        }
+
+        /* -------------------------------------------------------------------------
+           6. DRAWING CANVASES (RENDER LOOP)
+           ------------------------------------------------------------------------- */
+        function drawCanvases() {
+            drawTopCanvas();
+            drawSideCanvas();
+        }
+
+        function drawTopCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvasTop.width / dpr;
+            const h = canvasTop.height / dpr;
+
+            ctxTop.save();
+            ctxTop.scale(dpr, dpr);
+            ctxTop.clearRect(0, 0, w, h);
+
+            // 1. Arena Floor & Grid
+            ctxTop.fillStyle = '#060A12';
+            ctxTop.fillRect(0, 0, w, h);
+
+            // Grid lines (1m interval)
+            ctxTop.strokeStyle = '#151F32';
+            ctxTop.lineWidth = 1;
+            for (let x = 0; x <= 8; x++) {
+                const px = (x / 8) * w;
+                ctxTop.beginPath(); ctxTop.moveTo(px, 0); ctxTop.lineTo(px, h); ctxTop.stroke();
+            }
+            for (let y = 0; y <= 4; y++) {
+                const py = (y / 4) * h;
+                ctxTop.beginPath(); ctxTop.moveTo(0, py); ctxTop.lineTo(w, py); ctxTop.stroke();
+            }
+
+            // Center line x = 4.0m
+            const cx = (4.0 / 8.0) * w;
+            ctxTop.strokeStyle = '#334155';
+            ctxTop.lineWidth = 2;
+            ctxTop.setLineDash([4, 4]);
+            ctxTop.beginPath(); ctxTop.moveTo(cx, 0); ctxTop.lineTo(cx, h); ctxTop.stroke();
+            ctxTop.setLineDash([]);
+
+            // Goals (Red Left, Blue Right)
+            const gRed = mToPxTop(ARENA.goalX_Red, ARENA.goalY);
+            const gBlue = mToPxTop(ARENA.goalX_Blue, ARENA.goalY);
+
+            ctxTop.strokeStyle = '#F43F5E';
+            ctxTop.lineWidth = 4;
+            ctxTop.beginPath(); ctxTop.arc(gRed.px, gRed.py, 12, 0, Math.PI * 2); ctxTop.stroke();
+
+            ctxTop.strokeStyle = '#06B6D4';
+            ctxTop.lineWidth = 4;
+            ctxTop.beginPath(); ctxTop.arc(gBlue.px, gBlue.py, 12, 0, Math.PI * 2); ctxTop.stroke();
+
+            // 2. Trajectory Line
+            if (document.getElementById('chk-downwash').checked) {
+                ctxTop.strokeStyle = 'rgba(244, 63, 94, 0.4)';
+                ctxTop.lineWidth = 2;
+                ctxTop.setLineDash([3, 3]);
+                ctxTop.beginPath();
+                for (let t = 0; t <= 1; t += 0.02) {
+                    const pt = getAttackTrajectoryPoint(t);
+                    const pxPt = mToPxTop(pt.x, pt.y);
+                    if (t === 0) ctxTop.moveTo(pxPt.px, pxPt.py);
+                    else ctxTop.lineTo(pxPt.px, pxPt.py);
+                }
+                ctxTop.stroke();
+                ctxTop.setLineDash([]);
+            }
+
+            // 3. Render Drones
+            Object.values(drones).forEach(d => {
+                const pos = mToPxTop(d.x, d.y);
+                const color = d.team === 'red' ? (d.id === 'R1' ? '#F43F5E' : '#FB923C') : '#06B6D4';
+
+                // Downwash Circle Coverage (Top View)
+                if (document.getElementById('chk-downwash').checked) {
+                    ctxTop.fillStyle = d.team === 'blue' ? 'rgba(6, 182, 212, 0.1)' : 'rgba(244, 63, 94, 0.08)';
+                    ctxTop.beginPath(); ctxTop.arc(pos.px, pos.py, 22, 0, Math.PI * 2); ctxTop.fill();
+                }
+
+                // Drone Sphere Cage
+                ctxTop.fillStyle = color;
+                ctxTop.beginPath(); ctxTop.arc(pos.px, pos.py, 10, 0, Math.PI * 2); ctxTop.fill();
+
+                // Outer Protective Mesh Cage Line
+                ctxTop.strokeStyle = '#FFFFFF';
+                ctxTop.lineWidth = 1.5;
+                ctxTop.beginPath(); ctxTop.arc(pos.px, pos.py, 12, 0, Math.PI * 2); ctxTop.stroke();
+
+                // Striker Marker Star & Ribbon
+                if (d.id === 'R1') {
+                    ctxTop.fillStyle = '#FFD700';
+                    ctxTop.font = '10px font-tech';
+                    ctxTop.fillText('★', pos.px - 4, pos.py + 3);
+                } else {
+                    ctxTop.fillStyle = '#FFFFFF';
+                    ctxTop.font = '9px font-tech';
+                    ctxTop.fillText(d.id, pos.px - 6, pos.py + 3);
+                }
+
+                // Downwash Warning Ripples on R1
+                if (d.id === 'R1' && d.inDownwash) {
+                    ctxTop.strokeStyle = '#F43F5E';
+                    ctxTop.lineWidth = 2;
+                    ctxTop.beginPath(); ctxTop.arc(pos.px, pos.py, 18 + (Date.now() % 300) / 15, 0, Math.PI * 2); ctxTop.stroke();
+                }
+            });
+
+            ctxTop.restore();
+        }
+
+        function drawSideCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvasSide.width / dpr;
+            const h = canvasSide.height / dpr;
+
+            ctxSide.save();
+            ctxSide.scale(dpr, dpr);
+            ctxSide.clearRect(0, 0, w, h);
+
+            // 1. Background
+            ctxSide.fillStyle = '#060A12';
+            ctxSide.fillRect(0, 0, w, h);
+
+            // Ground Line
+            ctxSide.strokeStyle = '#334155';
+            ctxSide.lineWidth = 2;
+            ctxSide.beginPath(); ctxSide.moveTo(0, h - 2); ctxSide.lineTo(w, h - 2); ctxSide.stroke();
+
+            // Ground Effect Zone (z = 0 to 0.45m)
+            if (document.getElementById('chk-ground').checked) {
+                const geTop = h - (0.45 / ARENA.z) * h;
+                const grad = ctxSide.createLinearGradient(0, geTop, 0, h);
+                grad.addColorStop(0, 'rgba(6, 182, 212, 0.0)');
+                grad.addColorStop(1, 'rgba(6, 182, 212, 0.25)');
+                ctxSide.fillStyle = grad;
+                ctxSide.fillRect(0, geTop, w, h - geTop);
+
+                ctxSide.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+                ctxSide.setLineDash([2, 2]);
+                ctxSide.beginPath(); ctxSide.moveTo(0, geTop); ctxSide.lineTo(w, geTop); ctxSide.stroke();
+                ctxSide.setLineDash([]);
+            }
+
+            // Goals Suspension Poles & Rings
+            const gRedS = mToPxSide(ARENA.goalX_Red, ARENA.goalZ);
+            const gBlueS = mToPxSide(ARENA.goalX_Blue, ARENA.goalZ);
+
+            // Pole
+            ctxSide.strokeStyle = '#475569';
+            ctxSide.lineWidth = 2;
+            ctxSide.beginPath(); ctxSide.moveTo(gBlueS.px, 0); ctxSide.lineTo(gBlueS.px, gBlueS.pz - 15); ctxSide.stroke();
+
+            // Ring Vertical Projection
+            ctxSide.strokeStyle = '#06B6D4';
+            ctxSide.lineWidth = 5;
+            ctxSide.beginPath(); ctxSide.moveTo(gBlueS.px, gBlueS.pz - 15); ctxSide.lineTo(gBlueS.px, gBlueS.pz + 15); ctxSide.stroke();
+
+            // 2. Render Downwash Columns (Side View)
+            if (document.getElementById('chk-downwash').checked) {
+                Object.values(drones).forEach(d => {
+                    const pos = mToPxSide(d.x, d.z);
+                    const coneH = (1.3 / ARENA.z) * h;
+                    const grad = ctxSide.createLinearGradient(0, pos.pz, 0, pos.pz + coneH);
+                    const colorStop = d.team === 'blue' ? 'rgba(6, 182, 212,' : 'rgba(244, 63, 94,';
+                    grad.addColorStop(0, `${colorStop} 0.5)`);
+                    grad.addColorStop(1, `${colorStop} 0.0)`);
+
+                    ctxSide.fillStyle = grad;
+                    ctxSide.beginPath();
+                    ctxSide.moveTo(pos.px - 10, pos.pz + 5);
+                    ctxSide.lineTo(pos.px + 10, pos.pz + 5);
+                    ctxSide.lineTo(pos.px + 22, pos.pz + coneH);
+                    ctxSide.lineTo(pos.px - 22, pos.pz + coneH);
+                    ctxSide.closePath();
+                    ctxSide.fill();
+                });
+            }
+
+            // 3. Render Drones
+            Object.values(drones).forEach(d => {
+                const pos = mToPxSide(d.x, d.z);
+                const color = d.team === 'red' ? (d.id === 'R1' ? '#F43F5E' : '#FB923C') : '#06B6D4';
+
+                ctxSide.fillStyle = color;
+                ctxSide.beginPath(); ctxSide.arc(pos.px, pos.pz, 9, 0, Math.PI * 2); ctxSide.fill();
+
+                ctxSide.strokeStyle = '#FFF';
+                ctxSide.lineWidth = 1.5;
+                ctxSide.beginPath(); ctxSide.arc(pos.px, pos.pz, 11, 0, Math.PI * 2); ctxSide.stroke();
+
+                ctxSide.fillStyle = '#FFF';
+                ctxSide.font = '9px font-tech';
+                ctxSide.fillText(d.id, pos.px - 5, pos.pz + 3);
+
+                // Downwash Suppression Alert Label
+                if (d.id === 'R1' && d.inDownwash) {
+                    ctxSide.fillStyle = '#F43F5E';
+                    ctxSide.font = 'bold 10px font-tech';
+                    ctxSide.fillText('⚠️ 下洗壓制！DOWNWASH', pos.px - 35, pos.pz - 18);
+                }
+
+                // VRS Warning Label
+                if (d.id === 'R1' && d.inVRS) {
+                    ctxSide.fillStyle = '#EAB308';
+                    ctxSide.font = 'bold 10px font-tech';
+                    ctxSide.fillText('⚠️ 渦環警告 VRS!', pos.px - 25, pos.pz + 24);
+                }
+            });
+
+            ctxSide.restore();
+        }
+
+        /* -------------------------------------------------------------------------
+           7. FREEHAND ATTACK DRAWING HANDLERS
+           ------------------------------------------------------------------------- */
+        function initFreehandDrawing() {
+            let drawing = false;
+
+            canvasTop.addEventListener('pointerdown', e => {
+                if (simState.attackMode !== 'draw') return;
+                drawing = true;
+                simState.customPath = [];
+                addCustomPoint(e);
+            });
+
+            canvasTop.addEventListener('pointermove', e => {
+                if (drawing && simState.attackMode === 'draw') {
+                    addCustomPoint(e);
+                }
+            });
+
+            window.addEventListener('pointerup', () => {
+                if (drawing) {
+                    drawing = false;
+                    updateCustomPathZProfile();
+                }
+            });
+        }
+
+        function addCustomPoint(e) {
+            const rect = canvasTop.getBoundingClientRect();
+            const px = e.clientX - rect.left;
+            const py = e.clientY - rect.top;
+            const m = pxToMTop(px, py);
+            simState.customPath.push({ x: m.x, y: m.y, z: 2.0 });
+            drawCanvases();
+        }
+
+        function updateCustomPathZProfile() {
+            if (simState.customPath.length === 0) return;
+            const mode = document.getElementById('draw-height-select').value;
+            const len = simState.customPath.length;
+
+            simState.customPath.forEach((pt, i) => {
+                const t = i / len;
+                if (mode === 'ground') pt.z = t < 0.7 ? 0.45 : 0.45 + ((t - 0.7) / 0.3) * 1.55;
+                else if (mode === 'high') pt.z = 2.8 - t * 0.8;
+                else if (mode === 'wave') pt.z = 1.8 + Math.sin(t * Math.PI * 2) * 0.9;
+                else pt.z = 2.0;
+            });
+            drawCanvases();
+        }
+
+        function clearCustomDraw() {
+            simState.customPath = [];
+            drawCanvases();
+        }
+
+        /* -------------------------------------------------------------------------
+           8. MANUAL DRONE DRAGGING (WHEN PAUSED)
+           ------------------------------------------------------------------------- */
+        function initDroneDragging() {
+            let activeCanvas = null;
+
+            canvasTop.addEventListener('pointerdown', e => {
+                if (simState.playing || simState.attackMode === 'draw') return;
+                const rect = canvasTop.getBoundingClientRect();
+                const m = pxToMTop(e.clientX - rect.left, e.clientY - rect.top);
+
+                Object.values(drones).forEach(d => {
+                    if (Math.hypot(d.x - m.x, d.y - m.y) < 0.4) {
+                        draggedDrone = d;
+                        activeCanvas = 'top';
+                    }
+                });
+            });
+
+            canvasSide.addEventListener('pointerdown', e => {
+                if (simState.playing) return;
+                const rect = canvasSide.getBoundingClientRect();
+                const m = pxToMSide(e.clientX - rect.left, e.clientY - rect.top);
+
+                Object.values(drones).forEach(d => {
+                    if (Math.hypot(d.x - m.x, d.z - m.z) < 0.4) {
+                        draggedDrone = d;
+                        activeCanvas = 'side';
+                    }
+                });
+            });
+
+            window.addEventListener('pointermove', e => {
+                if (!draggedDrone || simState.playing) return;
+
+                if (activeCanvas === 'top') {
+                    const rect = canvasTop.getBoundingClientRect();
+                    const m = pxToMTop(e.clientX - rect.left, e.clientY - rect.top);
+                    draggedDrone.x = m.x; draggedDrone.y = m.y;
+                } else if (activeCanvas === 'side') {
+                    const rect = canvasSide.getBoundingClientRect();
+                    const m = pxToMSide(e.clientX - rect.left, e.clientY - rect.top);
+                    draggedDrone.x = m.x; draggedDrone.z = m.z;
+                }
+                drawCanvases();
+                updateHUD();
+            });
+
+            window.addEventListener('pointerup', () => {
+                draggedDrone = null;
+                activeCanvas = null;
+            });
+        }
+
+        /* -------------------------------------------------------------------------
+           9. UI & HUD UPDATES
+           ------------------------------------------------------------------------- */
+        function togglePlay() {
+            simState.playing = !simState.playing;
+            const btnText = document.getElementById('play-text');
+            const btnIcon = document.getElementById('play-icon');
+
+            if (simState.playing) {
+                btnText.textContent = '暫停演練';
+                btnIcon.className = 'fa-solid fa-pause';
+            } else {
+                btnText.textContent = '播放演練';
+                btnIcon.className = 'fa-solid fa-play';
+            }
+        }
+
+        function resetSim() {
+            simState.playing = false;
+            simState.time = 0.0;
+            document.getElementById('play-text').textContent = '播放演練';
+            document.getElementById('play-icon').className = 'fa-solid fa-play';
+
+            // Reset drone positions
+            drones.R1 = { id: 'R1', team: 'red', role: '進攻機', x: 1.5, y: 2.0, z: 0.5, vx: 0, vy: 0, vz: 0, inDownwash: false, inVRS: false };
+            updateDefensiveAI(drones.R1);
+            drawCanvases();
+            updateHUD();
+        }
+
+        function setSpeed(spd) {
+            simState.speed = spd;
+            document.querySelectorAll('.speed-btn').forEach(b => {
+                b.classList.remove('bg-cyan', 'text-navy-950', 'font-bold');
+                b.classList.add('bg-slate-800', 'text-slate-300');
+            });
+            const spdKey = spd === 0.5 ? '05' : (spd === 1.0 ? '10' : '15');
+            document.getElementById(`spd-${spdKey}`).classList.add('bg-cyan', 'text-navy-950', 'font-bold');
+        }
+
+        function setAttackMode(mode) {
+            simState.attackMode = mode;
+            if (mode === 'preset') {
+                document.getElementById('mode-preset-btn').className = 'px-2 py-0.5 rounded text-[11px] font-medium bg-rose text-white';
+                document.getElementById('mode-draw-btn').className = 'px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-white';
+                document.getElementById('preset-attack-wrap').classList.remove('hidden');
+                document.getElementById('draw-attack-wrap').classList.add('hidden');
+            } else {
+                document.getElementById('mode-draw-btn').className = 'px-2 py-0.5 rounded text-[11px] font-medium bg-rose text-white';
+                document.getElementById('mode-preset-btn').className = 'px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-white';
+                document.getElementById('preset-attack-wrap').classList.add('hidden');
+                document.getElementById('draw-attack-wrap').classList.remove('hidden');
+            }
+            resetSim();
+        }
+
+        function changeAttackPreset(id) {
+            simState.attackPresetId = parseInt(id);
+            resetSim();
+            updateTacticDescription();
+        }
+
+        function setDefTactic(id) {
+            simState.defTacticId = parseInt(id);
+            document.querySelectorAll('.def-tactic-btn').forEach(b => {
+                b.classList.remove('border-cyan', 'bg-cyan/20', 'text-cyan', 'font-bold');
+                b.classList.add('border-slate-800', 'bg-navy-950');
+            });
+            const activeBtn = document.getElementById(`def-btn-${id}`);
+            if (activeBtn) {
+                activeBtn.classList.add('border-cyan', 'bg-cyan/20', 'text-cyan', 'font-bold');
+            }
+            updateDefensiveAI(drones.R1);
+            drawCanvases();
+            updateTacticDescription();
+        }
+
+        function updateHUD() {
+            const r1 = drones.R1;
+            document.getElementById('hud-z').textContent = `${r1.z.toFixed(2)} m`;
+            document.getElementById('hud-z-bar').style.width = `${(r1.z / ARENA.z) * 100}%`;
+
+            const spd = Math.hypot(r1.vx, r1.vy, r1.vz);
+            document.getElementById('hud-speed').textContent = `${spd.toFixed(1)} m/s`;
+            document.getElementById('hud-speed-bar').style.width = `${Math.min(100, (spd / 6.0) * 100)}%`;
+
+            // Status Badges
+            const statusBadge = document.getElementById('telemetry-status');
+            const dwText = document.getElementById('hud-downwash-text');
+            const vrsText = document.getElementById('hud-vrs-text');
+
+            if (r1.inDownwash) {
+                statusBadge.textContent = '⚠️ 下洗壓制中 DOWNWASH!';
+                statusBadge.className = 'text-xs font-bold px-2 py-0.5 rounded bg-rose/20 text-rose border border-rose/40 pulse-subtle';
+                dwText.textContent = '嚴重干擾 (升力喪失)';
+                dwText.className = 'text-rose font-bold';
+            } else {
+                statusBadge.textContent = '正常飛行 Normal';
+                statusBadge.className = 'text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+                dwText.textContent = '無受干擾';
+                dwText.className = 'text-slate-300 font-bold';
+            }
+
+            if (r1.inVRS) {
+                vrsText.textContent = '⚠️ 渦環失速警告!';
+                vrsText.className = 'text-amber-400 font-bold pulse-subtle';
+            } else {
+                vrsText.textContent = '安全 (流體平穩)';
+                vrsText.className = 'text-emerald-400 font-bold';
+            }
+
+            // Estimate Success Rate
+            let success = 85;
+            if (r1.inDownwash) success -= 45;
+            if (r1.inVRS) success -= 30;
+            if (simState.defTacticId == 1 || simState.defTacticId == 4) success -= 15;
+            if (simState.attackPresetId == 6) success += 20; // Screen helps
+            success = Math.max(5, Math.min(98, success));
+            document.getElementById('hud-success-rate').textContent = `${success}%`;
+        }
+
+        const tacticDescriptions = {
+            attacks: [
+                "",
+                { t: "1. 貼地突襲 ＋ 門前急升", d: "利用地面效應氣墊降低阻力高速衝刺，衝至藍隊門前 1.5m 處大油門急升穿門。" },
+                { t: "2. 高空斜切俯衝穿門", d: "搶佔高空 z=2.9m 避開中低空封鎖，再斜向俯衝穿門，同時避免純垂直下降引發 VRS。" },
+                { t: "3. S 型立體蛇行假動作", d: "結合左右大幅變向與高度起伏，破壞守門員的預判路線。" },
+                { t: "4. 邊線高速繞背切入", d: "貼近邊線保持安全緩衝，繞過中路攔截網後急轉切入門心。" },
+                { t: "5. 中路假動作急停變向", d: "假裝衝向左側吸引清道夫，隨後瞬間向右側變向空檔穿門。" },
+                { t: "6. 隊友擋拆清門破門", d: "紅隊清道夫前壓撞開藍隊守門員，進攻機跟進穿門。" },
+                { t: "7. 進球後極速回防解越位", d: "得分後立刻低空貼地衝回中線後方，解除越位鎖定。" }
+            ],
+            defs: [
+                "",
+                { t: "1. 前後縱深雙層防線", d: "清道夫前置於 5.0m 逼迫提早變向；守門員鎮守 6.65m 封死最終門心。", c: "「隊友前壓擋拆！進攻機準備急升！」" },
+                { t: "2. 門前高低錯位聯防", d: "守門員封中高位、清道夫封中低位，前後錯開避免兩機氣流互相干擾。", c: "「注意高低差！拉高軌跡走斜上方！」" },
+                { t: "3. 門前八字斜角封鎖", d: "雙機呈 V 字漏斗形封鎖中央通道，迫使對手走低角度邊角。", c: "「走中路蛇行破開八字網！」" },
+                { t: "4. 最後30秒鐵桶死守", d: "雙機緊縮門前安全線，不輕易出擊追防，嚴防反向穿門犯規。", c: "「呼叫隊友全力擋拆撞開門洞！」" },
+                { t: "5. 高空下洗氣流壓制", d: "清道夫主動鎖定紅隊進攻機正上方進行下洗氣流壓制。", c: "「頭上有機！立刻閃左脫離氣流柱！」" },
+                { t: "6. 貼地封鎖 (反地面效應)", d: "清道夫巡航於中低空，專門在門前壓制貼地突襲機使其無法拉升。", c: "「改走高空斜切俯衝！」" },
+                { t: "7. 高位中場逼搶斷節奏", d: "清道夫壓上至中線附近提早干擾進攻機啟動。", c: "「繞邊線切入！別在中路硬碰！」" },
+                { t: "8. 45° 側翼斜切夾擊", d: "由斜側 45° 切入撞擊改變進攻機橫向動量，避免正面硬碰硬。", c: "「保持門前衝刺動量！防側撞！」" },
+                { t: "9. 逼向邊網困籠戰術", d: "卡住內線將進攻機趕向側網高掛網風險區。", c: "「保持半個機身距離！切回中央！」" },
+                { t: "10. 守門員失位極速補門", d: "守門員遭撞偏失位時，清道夫立刻放棄中場回縮門心。", c: "「敵方補位慢！快攻門心！」" },
+                { t: "11. 門前畫圓機動封堵", d: "守門員於門前持續微幅畫圓保持慣性與靈敏度。", c: "「搖桿假動作騙開守門員重心！」" },
+                { t: "12. 由守轉攻擋拆反擊", d: "成功攔截後藍隊清道夫前壓掩護反擊。", c: "「全隊極速回防！」" }
+            ]
+        };
+
+        function updateTacticDescription() {
+            const att = tacticDescriptions.attacks[simState.attackPresetId] || { t: "手繪自訂軌跡", d: "依據使用者繪製的雙視角軌跡飛行。" };
+            const def = tacticDescriptions.defs[simState.defTacticId] || tacticDescriptions.defs[1];
+
+            document.getElementById('tactic-attack-title').innerHTML = `<i class="fa-solid fa-play"></i> ${att.t}`;
+            document.getElementById('tactic-attack-desc').textContent = att.d;
+
+            document.getElementById('tactic-def-title').innerHTML = `<i class="fa-solid fa-shield-halved"></i> ${def.t}`;
+            document.getElementById('tactic-def-desc').textContent = def.d;
+
+            document.getElementById('tactic-voice-call').textContent = def.c || "「戰術執行！注意溝通！」";
+        }
+
+        /* -------------------------------------------------------------------------
+           10. INTERACTIVE QUIZ DATA & LOGIC
+           ------------------------------------------------------------------------- */
+        const quizData = [
+            {
+                id: 1,
+                q: "1. 當進攻無人機飛入敵方防守機的正下方 30~50cm 處時，會發生什麼氣流現象？",
+                opts: ["A. 獲得額外上升氣流加速飛高", "B. 吸入強烈下洗氣流，升力瞬間瓦解失速掉高", "C. 進入地面效應省電高飛", "D. 觸發渦環狀態無法前進"],
+                ans: 1,
+                exp: "解析：無人機螺旋槳高速向下吹出強勁下洗氣流柱，正下方機體會吸入亂流瓦解升力，此為防守方高空壓制的核心原理。"
+            },
+            {
+                id: 2,
+                q: "2. 在 3v3 比賽中，進攻機成功穿過門環得分後，下一步必須執行什麼動作才能發動下一波進攻？",
+                opts: ["A. 在門前懸停 5 秒", "B. 完全退回中線（x = 4.0m）後方解除越位", "C. 與守門員相撞一次", "D. 降落更換電池"],
+                ans: 1,
+                exp: "解析：規章規定進球後必須退回中線後方解除越位，未退回中線連續穿門者得分無效。"
+            },
+            {
+                id: 3,
+                q: "3. 進攻機飛手在空中進行急降時，為什麼強烈建議採用「斜向俯衝」而非「純垂直急降」？",
+                opts: ["A. 防止機身勾住頂網", "B. 避免掉入自己產生的尾流渦環狀態 (VRS) 導致搖擺失控", "C. 節省電池電量", "D. 避開地面效應"],
+                ans: 1,
+                exp: "解析：純垂直急降會掉進自己吹出的尾流渦環中引發 VRS 失速失控；斜向俯衝可讓槳葉持續切入前方乾淨空氣。"
+            },
+            {
+                id: 4,
+                q: "4. 防守機（守門員）在門前防守時，若被進攻機撞入球門內部，下列哪種做法是正確的？",
+                opts: ["A. 直接由球門後方反向穿門拉回門前", "B. 立刻由球門下方或側邊脫離，嚴禁反向穿門", "C. 停在門洞內繼續塞門", "D. 申請暫停比賽"],
+                ans: 1,
+                exp: "解析：防守機由球門後方反向穿門屬於嚴重犯規，將判給對手 1v1 點球機會。"
+            },
+            {
+                id: 5,
+                q: "5. 貼地飛行（高度 z < 0.45m）時，無人機會獲得什麼物理優勢？",
+                opts: ["A. 完全免疫下洗氣流", "B. 氣流在地面形成高壓氣墊，降低阻力且加速衝刺更省電", "C. 自動解鎖越位", "D. 機體質量變輕"],
+                ans: 1,
+                exp: "解析：地面效應（Ground Effect）能在貼地飛行時形成高壓氣墊、抑制槳尖渦流並降低阻力。"
+            }
+        ];
+
+        let quizUserAns = {};
+
+        function initQuiz() {
+            const container = document.getElementById('quiz-box');
+            container.innerHTML = '';
+
+            quizData.forEach((q, idx) => {
+                const card = document.createElement('div');
+                card.className = 'bg-navy-950 p-5 rounded-2xl border border-slate-800 space-y-3';
+                card.innerHTML = `
+                    <h4 class="text-sm font-bold text-slate-200">${q.q}</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        ${q.opts.map((opt, oIdx) => `
+                            <button onclick="answerQuiz(${idx}, ${oIdx})" id="q-btn-${idx}-${oIdx}" class="quiz-opt-btn text-left p-3 rounded-xl border border-slate-800 bg-navy-900 hover:border-cyan transition text-slate-300">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div id="q-exp-${idx}" class="hidden p-3 rounded-xl bg-navy-900 border text-xs leading-relaxed"></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function answerQuiz(qIdx, optIdx) {
+            if (quizUserAns[qIdx] !== undefined) return; // Answered
+            quizUserAns[qIdx] = optIdx;
+
+            const q = quizData[qIdx];
+            const isCorrect = (optIdx === q.ans);
+
+            const btn = document.getElementById(`q-btn-${qIdx}-${optIdx}`);
+            if (isCorrect) {
+                btn.className = 'quiz-opt-btn text-left p-3 rounded-xl border-2 border-emerald-500 bg-emerald-500/20 text-emerald-300 font-bold';
+            } else {
+                btn.className = 'quiz-opt-btn text-left p-3 rounded-xl border-2 border-rose bg-rose/20 text-rose font-bold';
+                document.getElementById(`q-btn-${qIdx}-${q.ans}`).className = 'quiz-opt-btn text-left p-3 rounded-xl border-2 border-emerald-500 bg-emerald-500/20 text-emerald-300 font-bold';
+            }
+
+            const expBox = document.getElementById(`q-exp-${qIdx}`);
+            expBox.classList.remove('hidden');
+            expBox.className = isCorrect ? 'p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs' : 'p-3 rounded-xl bg-rose/10 border border-rose/30 text-rose-300 text-xs';
+            expBox.innerHTML = `<strong>${isCorrect ? '✅ 回答正確！' : '❌ 回答錯誤！'}</strong> ${q.exp}`;
+
+            updateQuizScore();
+        }
+
+        function updateQuizScore() {
+            let score = 0;
+            Object.keys(quizUserAns).forEach(qIdx => {
+                if (quizUserAns[qIdx] === quizData[qIdx].ans) {
+                    score += 10;
+                }
+            });
+            document.getElementById('quiz-score').textContent = `${score} / 50`;
+        }
+
+        function resetQuiz() {
+            quizUserAns = {};
+            document.getElementById('quiz-score').textContent = `0 / 50`;
+            initQuiz();
+        }
+
+        /* -------------------------------------------------------------------------
+           11. ANIMATION LOOP & INIT ON LOAD
+           ------------------------------------------------------------------------- */
+        function animLoop() {
+            updatePhysics();
+            drawCanvases();
+            requestAnimationFrame(animLoop);
+        }
+
+        window.onload = function() {
+            resizeCanvases();
+            initFreehandDrawing();
+            initDroneDragging();
+            setDefTactic(1);
+            initQuiz();
+            animLoop();
+        };
+    </script>
+</body>
+</html>
